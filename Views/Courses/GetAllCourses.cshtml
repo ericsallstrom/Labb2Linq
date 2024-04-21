@@ -1,0 +1,33 @@
+﻿@model IEnumerable<Labb2Linq.Models.Course>
+
+@{
+    ViewData["Title"] = "Courses";
+}
+
+<h2>Courses</h2>
+<hr />
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.CourseName)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var course in Model)
+        {
+            <tr>
+                <td>
+                    @course.CourseName
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@course.CourseId">Edit</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a asp-action="Index" class="btn btn-outline-primary mt-2">Back</a>

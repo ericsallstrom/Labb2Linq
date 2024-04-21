@@ -1,0 +1,47 @@
+﻿@model IEnumerable<Labb2Linq.Models.Enrollment>
+
+@{
+    ViewData["Title"] = "Enrollment";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Student)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Course)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Grade)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var enrollment in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => enrollment.Student.StudentName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => enrollment.Course.CourseName)
+            </td>
+            <td>
+                @(enrollment.Grade.HasValue ? Html.DisplayFor(modelItem => enrollment.Grade) : "N/A")
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@enrollment.EnrollmentId">Edit</a> |
+                <a asp-action="Details" asp-route-id="@enrollment.EnrollmentId">Details</a> |
+                <a asp-action="Delete" asp-route-id="@enrollment.EnrollmentId">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

@@ -1,0 +1,35 @@
+﻿@model Labb2Linq.ViewModels.GetTeachersInProgramming1VM
+
+@{
+    ViewData["Title"] = "Retrieve all teachers in Programming 1";
+}
+
+<h2>Teachers in '@Model.CourseName'</h2>
+<hr />
+
+@if (Model.Teachers.Count != 0)
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.Teachers)</th>                
+            </tr>           
+        </thead>
+        <tbody>
+            @foreach(var teacher in Model.Teachers)
+            {
+                <tr>
+                    <td>@teacher.TeacherName</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+} 
+else
+{
+    <div class="mt-3">
+        <p>No teachers found.</p>
+    </div>
+}
+
+<a asp-action="Index" class="btn btn-outline-primary mt-2">Back</a>

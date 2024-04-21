@@ -1,0 +1,43 @@
+﻿@model Labb2Linq.ViewModels.UpdateTeacherForStudentInProgramming1VM
+
+@{
+    ViewData["Title"] = "Update teacher for student";
+}
+
+<h2>Update Teacher For a Student in Programming 1</h2>
+<hr />
+<form method="post" asp-action="UpdateTeacherForStudentInProgramming1">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="Course.CourseId" />
+    <div class="form-group mb-2">
+        <label asp-for="Course.CourseName" class="control-label"></label>
+        <input asp-for="Course.CourseName" class="form-control" disabled />
+    </div>
+    <div class="form-group mb-2">
+        <label asp-for="StudentId" class="control-label"></label>
+        <select asp-for="StudentId" asp-items="@Model.StudentList" class="form-control">
+            <option disabled selected>-- Select Student --</option>
+        </select>
+        <span asp-validation-for="StudentId" class="text-danger"></span>
+    </div>
+    <div class="form-group mb-2">
+        <label asp-for="CurrentTeachers" class="control-label">Teacher To Replace</label>
+        <select asp-for="TeacherId" asp-items="Model.CurrentTeachers" class="form-control">
+            <option disabled selected>-- Choose Which Teacher To Replace --</option>
+        </select>
+        <span asp-validation-for="TeacherId" class="text-danger"></span>
+    </div>
+    <div class="form-group mb-2">
+        <label asp-for="AvailableTeachers" class="control-label">New Teacher</label>
+        <select asp-for="NewTeacherId" asp-items="Model.AvailableTeachers" class="form-control">
+            <option disabled selected>-- Select New Teacher --</option>
+        </select>
+        <span asp-validation-for="NewTeacherId" class="text-danger"></span>
+    </div>
+    <div class="d-flex justify-content-between mt-4">
+        <input type="submit" class="btn btn-outline-success" value="Update Changes" />
+        <a asp-action="Index" class="btn btn-outline-primary">Back</a>
+    </div>
+</form>
+
+
