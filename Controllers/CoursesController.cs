@@ -15,9 +15,9 @@ namespace Labb2Linq.Controllers
     public class CoursesController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly ILogger<ApplicationDbContext> _logger;
+        private readonly ILogger<CoursesController> _logger;
 
-        public CoursesController(ApplicationDbContext context, ILogger<ApplicationDbContext> logger)
+        public CoursesController(ApplicationDbContext context, ILogger<CoursesController> logger)
         {
             _context = context;
             _logger = logger;
@@ -33,7 +33,7 @@ namespace Labb2Linq.Controllers
             var teachersInProgramming1 = await _context.Courses
                 .Where(c => c.CourseName == "Programmering 1")
                 .Include(c => c.CourseTeachers)
-                    .ThenInclude(ct => ct.Teacher)
+                .ThenInclude(ct => ct.Teacher)
                 .Select(c => new GetTeachersInProgramming1VM
                 {
                     CourseName = c.CourseName,
@@ -42,28 +42,6 @@ namespace Labb2Linq.Controllers
                 .FirstOrDefaultAsync();
 
             return View(teachersInProgramming1);
-        }
-
-        public async Task<IActionResult> GetAllStudentsWithTeachers()
-        {
-            var allStudentsWithTeachers = await _context.Students
-                .Include(s => s.StudentCourses)
-                    .ThenInclude(sc => sc.Course)
-                        .ThenInclude(c => c.CourseTeachers)
-                            .ThenInclude(ct => ct.Teacher)
-                .Select(s => new GetAllStudentsWithTeachersVM
-                {
-                    StudentName = s.StudentName,
-                    Teachers = s.StudentCourses
-                        .SelectMany(sc => sc.Course.CourseTeachers.Select(ct => ct.Teacher))
-                        .Distinct()
-                        .ToList(),
-                    ClassName = s.ClassList.ClassName
-                })
-                .OrderBy(s => s.ClassName)
-                .ToListAsync();
-
-            return View(allStudentsWithTeachers);
         }
 
         public async Task<IActionResult> GetStudentsWithTeachersInProgramming1()
@@ -96,6 +74,7 @@ namespace Labb2Linq.Controllers
             }
 
             var course = await _context.Courses.FindAsync(id);
+
             if (course == null)
             {
                 return NotFound();
@@ -140,30 +119,7 @@ namespace Labb2Linq.Controllers
 
         public async Task<IActionResult> UpdateTeacherForStudentInProgramming1()
         {
-            var studentsInProgramming1 = await _context.Students
-                .Where(s => s.StudentCourses.Any(sc => sc.Course.CourseName == "Programmering 1"))
-                .ToListAsync();
-
-            var programming1Course = await _context.Courses.FirstOrDefaultAsync(c => c.CourseName == "Programmering 1");
-
-            var teachersInProgramming1 = await _context.CourseTeachers
-                .Where(ct => ct.FkCourseId == programming1Course.CourseId)
-                .Select(ct => ct.Teacher).Distinct()
-                .ToListAsync();
-
-            var teachersInProgramming1Ids = teachersInProgramming1.Select(t => t.TeacherId);
-            var restOfTheTeachers = await _context.Teachers
-                .Where(t => !teachersInProgramming1Ids.Contains(t.TeacherId))
-                .ToListAsync();
-
-            var viewModel = new UpdateTeacherForStudentInProgramming1VM
-            {
-                StudentList = new SelectList(studentsInProgramming1, "StudentId", "StudentName"),
-                Course = programming1Course,
-                CurrentTeachers = new SelectList(teachersInProgramming1, "TeacherId", "TeacherName"),
-                AvailableTeachers = new SelectList(restOfTheTeachers, "TeacherId", "TeacherName"),
-            };
-
+            var viewModel = await CreateUpdateTeacherForStudentViewModel();
             return View(viewModel);
         }
 
@@ -171,42 +127,53 @@ namespace Labb2Linq.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateTeacherForStudentInProgramming1(UpdateTeacherForStudentInProgramming1VM viewModel)
         {
-            if (viewModel.StudentId != null && viewModel.TeacherId != null && viewModel.NewTeacherId != null)
+            if (!ModelState.IsValid)
             {
-                var selectedStudent = await _context.Students.FirstOrDefaultAsync(s => s.StudentId == viewModel.StudentId);
-
-                if (selectedStudent != null && ModelState.IsValid)
-                {
-                    try
-                    {
-                        var oldCourseTeacher = await _context.CourseTeachers
-                            .FirstOrDefaultAsync(ct => ct.FkTeacherId == viewModel.TeacherId && ct.FkCourseId == viewModel.Course.CourseId);
-
-                        if (oldCourseTeacher != null)
-                        {
-                            _context.CourseTeachers.Remove(oldCourseTeacher);
-                            await _context.SaveChangesAsync();
-                        }
-
-                        var newCourseTeacher = new CourseTeacher
-                        {
-                            FkTeacherId = viewModel.NewTeacherId.Value,
-                            FkCourseId = viewModel.Course.CourseId
-                        };
-
-                        _context.CourseTeachers.Add(newCourseTeacher);
-                        await _context.SaveChangesAsync();
-
-                        return RedirectToAction(nameof(Index));
-                    }
-                    catch (DbUpdateConcurrencyException)
-                    {
-                        return NotFound();
-                    }
-                }
+                viewModel = await CreateUpdateTeacherForStudentViewModel();
+                return View(viewModel);
             }
-            
+
+            var selectedStudent = await _context.Students.FirstOrDefaultAsync(s => s.StudentId == viewModel.StudentId);
+
+            if (selectedStudent == null)
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                var oldCourseTeacher = await _context.CourseTeachers
+                    .FirstOrDefaultAsync(ct => ct.FkTeacherId == viewModel.TeacherId && ct.FkCourseId == viewModel.Course.CourseId);
+
+                if (oldCourseTeacher != null)
+                {
+                    _context.CourseTeachers.Remove(oldCourseTeacher);
+                    await _context.SaveChangesAsync();
+                }
+
+                var newCourseTeacher = new CourseTeacher
+                {
+                    FkTeacherId = viewModel.NewTeacherId.Value,
+                    FkCourseId = viewModel.Course.CourseId
+                };
+
+                _context.CourseTeachers.Add(newCourseTeacher);
+                await _context.SaveChangesAsync();
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return NotFound();
+            }          
+        }
+
+        private async Task<UpdateTeacherForStudentInProgramming1VM> CreateUpdateTeacherForStudentViewModel()
+        {
             var programming1Course = await _context.Courses.FirstOrDefaultAsync(c => c.CourseName == "Programmering 1");
+            var studentsInProgramming1 = await _context.Students
+             .Where(s => s.StudentCourses.Any(sc => sc.Course.CourseName == "Programmering 1"))
+             .ToListAsync();
             var teachersInProgramming1 = await _context.CourseTeachers
                 .Where(ct => ct.FkCourseId == programming1Course.CourseId)
                 .Select(ct => ct.Teacher)
@@ -218,95 +185,20 @@ namespace Labb2Linq.Controllers
                 .Where(t => !teachersInProgramming1Ids.Contains(t.TeacherId))
                 .ToListAsync();
 
-            viewModel.Course = programming1Course;
-            viewModel.StudentList = new SelectList(await _context.Students.ToListAsync(), "StudentId", "StudentName");
-            viewModel.CurrentTeachers = new SelectList(teachersInProgramming1, "TeacherId", "TeacherName");
-            viewModel.AvailableTeachers = new SelectList(restOfTheTeachers, "TeacherId", "TeacherName");
-
-            return View(viewModel);
-        }
-
-        // GET: Courses/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
+            var viewModel = new UpdateTeacherForStudentInProgramming1VM
             {
-                return NotFound();
-            }
+                Course = programming1Course,
+                StudentList = new SelectList(studentsInProgramming1, "StudentId", "StudentName"),
+                CurrentTeachers = new SelectList(teachersInProgramming1, "TeacherId", "TeacherName"),
+                AvailableTeachers = new SelectList(restOfTheTeachers, "TeacherId", "TeacherName"),
+            };
 
-            var course = await _context.Courses.FirstOrDefaultAsync(m => m.CourseId == id);
-
-            if (course == null)
-            {
-                return NotFound();
-            }
-
-            return View(course);
-        }
-
-        // GET: Courses/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: Courses/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("CourseId,CourseName")] Course course)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Add(course);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(course);
-        }
-
-        // GET: Courses/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var course = await _context.Courses
-                .FirstOrDefaultAsync(m => m.CourseId == id);
-            if (course == null)
-            {
-                return NotFound();
-            }
-
-            return View(course);
-        }
-
-        // POST: Courses/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var course = await _context.Courses.FindAsync(id);
-            if (course != null)
-            {
-                _context.Courses.Remove(course);
-            }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return viewModel;
         }
 
         private bool CourseExists(int id)
         {
             return _context.Courses.Any(e => e.CourseId == id);
-        }
-
-        private bool CourseTeacherExists(int teacherId, int courseId)
-        {
-            return _context.CourseTeachers.Any(ct => ct.FkTeacherId == teacherId && ct.FkCourseId == courseId);
         }
     }
 }

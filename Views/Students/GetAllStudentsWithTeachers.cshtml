@@ -1,40 +1,45 @@
-﻿@model IEnumerable<Labb2Linq.ViewModels.StudentsWithTeachersVM>
+﻿@model List<Labb2Linq.ViewModels.GetAllStudentsWithTeachersVM>
 
 @{
-    ViewData["Title"] = "Studenter";
+    ViewData["Title"] = "Retrieve all students with teachers";
 }
 
-<h1>@ViewData["Title"]</h1>
+<h2>All students with their respective teachers</h2>
+<hr />
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.StudentName)                
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Teachers)                
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ClassName)                
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var student in Model)
-        {
+@if (Model.Count != 0)
+{
+    <table class="table table-striped">
+        <thead>
             <tr>
-                <td>@student.StudentName</td>
-                <td>
-                    @foreach (var teacher in student.Teachers)
-                    {
-                        @teacher                        
-                        <br />
-                    }
-                </td>
-                <td>@student.ClassName</td>
+                <th>Student</th>
+                <th>Teacher(s)</th>
+                <th>Class</th>
             </tr>
-        }    
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var student in Model)
+            {
+                <tr>
+                    <td>@student.StudentName</td>
+                    <td>
+                        @foreach (var teacher in student.Teachers)
+                        {
+                            @teacher.TeacherName
+                            <br />
+                        }
+                    </td>
+                    <td>@student.ClassName</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="mt-3">
+        <p>No students and teachers found.</p>
+    </div>
+}
+
+<a asp-controller="Courses" asp-action="Index" class="btn btn-outline-primary mt-2">Back</a>
